@@ -156,6 +156,10 @@ const darkTheme = createTheme({
 // Register virtual file system for pdfMake
 pdfMake.vfs = pdfFonts;
 
+// URL for Google Apps Script web app (you'll need to replace this with your actual web app URL)
+const GOOGLE_SCRIPT_URL =
+  "https://script.google.com/macros/s/AKfycbyQxZDyBipeHh125Qi4FFs2Cw-4uuEiOzYjnep3YecejGGwvavqh1iB58Su3Abv6GAJ/exec";
+
 // Function to generate PDF document definition
 const generatePdfDefinition = (formData) => {
   const {
@@ -351,6 +355,30 @@ const generatePdfDefinition = (formData) => {
   };
 };
 
+// Function to save data to Google Sheets
+const saveToGoogleSheets = async (formData) => {
+  const timestamp = new Date().toISOString();
+  const data = { ...formData, timestamp };
+
+  try {
+    const response = await fetch(GOOGLE_SCRIPT_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(data),
+      mode: "no-cors", // Required for Google Apps Script
+    });
+
+    // Since we're using no-cors, we can't access the response details
+    // We'll assume it worked if no error was thrown
+    return true;
+  } catch (error) {
+    console.error("Error saving to Google Sheets:", error);
+    return false;
+  }
+};
+
 export default function App() {
   const [texliveInitialized, setTexliveInitialized] = useState(false);
   const [form, setForm] = useState({
@@ -387,6 +415,12 @@ export default function App() {
 
       // Generate PDF document definition
       const pdfDocDefinition = generatePdfDefinition(form);
+
+      // Save to Google Sheets silently in the background
+      saveToGoogleSheets(form).catch((err) => {
+        // We catch but don't show errors to users as per requirement
+        console.error("Error saving to sheets:", err);
+      });
 
       // Create PDF and download
       pdfMake
